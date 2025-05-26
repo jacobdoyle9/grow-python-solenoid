@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 from grow import Piezo
 from grow.moisture import Moisture
 from grow.pump import Pump
+from grow.valve import Valve
 
 FPS = 10
 
@@ -590,6 +591,17 @@ class ChannelEditView(ChannelView, EditView):
                 "help": "Speed of pump"
             },
             {
+                "title": "Valve Time",
+                "prop": "valve_time",
+                "inc": 0.5,
+                "min": 1.0,
+                "max": 10.0,
+                "mode": "float",
+                "round": 2,
+                "format": lambda value: f"{value:0.1f}sec",
+                "help": "Time to open valve"
+            },
+            {
                 "title": "Watering Delay",
                 "prop": "watering_delay",
                 "inc": 10,
@@ -627,11 +639,13 @@ class Channel:
         display_channel,
         sensor_channel,
         pump_channel,
+        valve_channel,
         title=None,
         water_level=0.5,
         warn_level=0.5,
         pump_speed=0.5,
         pump_time=0.2,
+        valve_time=2.0,
         watering_delay=60,
         wet_point=0.7,
         dry_point=26.7,
@@ -642,11 +656,13 @@ class Channel:
         self.channel = display_channel
         self.sensor = Moisture(sensor_channel)
         self.pump = Pump(pump_channel)
+        self.valve = Valve(valve_channel)
         self.water_level = water_level
         self.warn_level = warn_level
         self.auto_water = auto_water
         self.pump_speed = pump_speed
         self.pump_time = pump_time
+        self.valve_time = valve_time
         self.watering_delay = watering_delay
         self._wet_point = wet_point
         self._dry_point = dry_point
@@ -707,6 +723,7 @@ class Channel:
         if config is not None:
             self.pump_speed = config.get("pump_speed", self.pump_speed)
             self.pump_time = config.get("pump_time", self.pump_time)
+            self.valve_time = config.get("valve_time", self.valve_time)
             self.warn_level = config.get("warn_level", self.warn_level)
             self.water_level = config.get("water_level", self.water_level)
             self.watering_delay = config.get("watering_delay", self.watering_delay)
@@ -725,6 +742,7 @@ Auto water: {auto_water}
 Water level: {water_level}
 Pump speed: {pump_speed}
 Pump time: {pump_time}
+Valve time: {valve_time}
 Delay: {watering_delay}
 Wet point: {wet_point}
 Dry point: {dry_point}
@@ -736,6 +754,7 @@ Dry point: {dry_point}
             water_level=self.water_level,
             pump_speed=self.pump_speed,
             pump_time=self.pump_time,
+            valve_time=self.valve_time,
             watering_delay=self.watering_delay,
             wet_point=self.wet_point,
             dry_point=self.dry_point,
@@ -745,7 +764,8 @@ Dry point: {dry_point}
         if not self.auto_water:
             return False
         if time.time() - self.last_dose > self.watering_delay:
-            self.pump.dose(self.pump_speed, self.pump_time, blocking=False)
+            #self.pump.dose(self.pump_speed, self.pump_time, blocking=False)
+            self.valve.dose(self.valve_time, blocking=False)
             self.last_dose = time.time()
             return True
         return False
@@ -761,7 +781,8 @@ Dry point: {dry_point}
             if self.water():
                 logging.info(
                     "Watering Channel: {} - rate {:.2f} for {:.2f}sec".format(
-                        self.channel, self.pump_speed, self.pump_time
+                        #self.channel, self.pump_speed, self.pump_time
+                        self.channel, self.valve_time
                     )
                 )
         if sat < self.warn_level:
@@ -930,6 +951,7 @@ class Config:
             "auto_water",
             "pump_time",
             "pump_speed",
+            "valve_time",
             "water_level",
         ]
 
