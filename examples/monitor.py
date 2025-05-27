@@ -764,7 +764,6 @@ Dry point: {dry_point}
         if not self.auto_water:
             return False
         if time.time() - self.last_dose > self.watering_delay:
-            #self.pump.dose(self.pump_speed, self.pump_time, blocking=False)
             self.valve.dose(self.valve_time, blocking=False)
             self.last_dose = time.time()
             return True
@@ -781,7 +780,6 @@ Dry point: {dry_point}
             if self.water():
                 logging.info(
                     "Watering Channel: {} - rate {:.2f} for {:.2f}sec".format(
-                        #self.channel, self.pump_speed, self.pump_time
                         self.channel, self.valve_time
                     )
                 )
